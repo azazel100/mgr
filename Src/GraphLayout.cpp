@@ -377,7 +377,8 @@ void PrintArgs()
 	cout << "   <output path>       output directory"     << endl;
 	cout << "   <draw params>:      " << endl;
 	cout << "		/drawStages <size>  draw intermediate levels and iterations" << endl;	
-	cout << "		/drawMovie <size>  draw movie frames" << endl;
+	cout << "		/drawMovie <size>  draw movie frames (multiple per iteration)" << endl;
+	cout << "		/drawFinal <size>  set final frame size" << endl;
 	cout << endl;
 	cout << "methods:" << endl;
 	cout << "   springelectric      draw using multilevel Fruchterman & Reingold " << endl;
@@ -396,13 +397,17 @@ void PrintArgs()
 	cout << "                       Costs m*logM in time each iteration and space same space" << endl;
 	cout << "       [/AlternativeUpperLevels  <count>]" << endl;
 	cout << "                       Alternate coarsenings between iterations to mimise error." << endl;
-	cout << "                       Costs m*logM + n*logN in space, processing per level" << endl;	
-	cout << "       [/AlternativeUpperLevelsRandom ]" << endl;
-	cout << "                       Generate new random upper level each iteration." << endl;
-	cout << "                       Costs m*logM + n*logN in space." << endl;
+	cout << "                       Costs m*logM + n*logN in space, processing per level" << endl;
 	cout << "       [/AlternativeUpperLevelsAverage]" << endl;
 	cout << "                       Average forces from all alternative coarsenings each iteration" << endl;
 	cout << "                       Best quality, cost linear to alteratives count" << endl;
+	cout << "       [/AlternativeUpperLevelsRandom ]" << endl;
+	cout << "                       Generate new random upper level each iteration." << endl;
+	cout << "                       Costs m*logM + n*logN in space." << endl;
+	cout << "       [/SkipManyLevels ]" << endl;
+	cout << "                       Move move then one level if theshold allows." << endl;
+	cout << "       [/SkipLevelThreashold ]" << endl;
+	cout << "                       Aproximation threshold ." << endl;
 	cout << "   " << endl;
 }
 
@@ -477,10 +482,7 @@ bool ParseArgs(int argc, _TCHAR* argv[])
 			{
 				se->useAproxForcePersistentNodeProperties = true;
 			}
-			else if (Compare(argv[argNum], L"/EdgeTransitions"))
-			{
-				se->useAproxForceEdgeTransitions = true;
-			}
+			
 			else if (Compare(argv[argNum], L"/EdgeTransitions"))
 			{
 				se->useAproxForceEdgeTransitions = true;
