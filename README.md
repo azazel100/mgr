@@ -1,2 +1,0 @@
-# mgr
-praca magisterska
