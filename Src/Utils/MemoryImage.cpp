@@ -25,15 +25,15 @@ MemoryImage::~MemoryImage()
 
 #define rfpart_(X) (1.0-fpart_(X))
 
-//double fpart_(double x)
-//{
-//	if (x < 0)
-//		return 1 - (x - floor(x));
-//	return x - floor(x);
-//}
+double fpart_(double x)
+{
+	if (x < 0)
+		return 1 - (x - floor(x));
+	return x - floor(x);
+}
 
 
-#define fpart_(X) (((double)(X))-(double)ipart_(X))
+//#define fpart_(X) (((double)(X))-(double)ipart_(X))
 #define swap_(a, b) do{ __typeof__(a) tmp;  tmp = a; a = b; b = tmp; }while(0)
 
 struct Col
@@ -55,6 +55,7 @@ void MemoryImage::DrawPoint(int x, int y, double value, Mode mode)
 			*p = value;
 		
 	}
+	assert(*p >= 0);
 }
 
 double& MemoryImage::Pixel(int x, int y)

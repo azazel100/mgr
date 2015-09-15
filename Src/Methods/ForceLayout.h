@@ -1,4 +1,5 @@
 #pragma once
+#pragma once
 #include "../structure/layer.h"
 #include "../utils/Image.h"
 #include "../utils/Stopwatch.h"
@@ -40,9 +41,9 @@ public:
 	virtual Point CalcForce(NodePtr node,int threadId)=0;
 	
 	virtual void InitExecution() = 0;
-	virtual void InitLayer()=0;
 	virtual double CalculateScaling() = 0;
-	virtual void InitLayerPositions()=0;
+	virtual void InitLayer()=0;	
+	//virtual void InitLayerPositions()=0;
 	virtual void InitIteration(int number)=0;
 
 	virtual wstring Describe() = 0;
@@ -87,6 +88,11 @@ public:
 		Init();
 		// preparations
 		totalTime.Start();
+
+		FindLargestConnectedSubgraph(m_layers.front());
+
+		cout << "Laying out graph with " << m_layers.front()->nodes().size() << " nodes and " << m_layers.front()->edges().size() << " edges" << endl;
+
 		CreateLayers();
 
 		out << "Execution" << "\n";
@@ -122,7 +128,15 @@ public:
 
 			auto avgLen = layer->CalcAverageEdgeLength();
 
+			auto extent = layer->CalcExtent();
 			auto initialStep = avgLen*0.5;
+			if (initialStep > extent.width() / 10)
+			{
+				out << "initial step was to big setting from" << initialStep << " to " << extent.width() / 10 << "\n";
+				initialStep = extent.width() / 10;
+				
+			}
+
 			auto finalStep = initialStep / 10;
 			if (layer->level == 0)
 				finalStep = initialStep / 100;
@@ -148,6 +162,7 @@ public:
 
 	}
 
+
 private:
 	std::wstring_convert < std::codecvt_utf8<wchar_t>, wchar_t > wstringConverter;
 	Stopwatch totalTime;
@@ -172,7 +187,92 @@ private:
 	}
 
 
+	void FindLargestConnectedSubgraph(Layer* layer)
+	{
+		out << "Searching for largest connected component:\n";
+		vector<pair<Node*, int>> components;
+		int largetsSize = 0;
+		Node* largestStart = nullptr;
 
+
+		for (auto n: layer->nodes())
+		{
+			n->statusMarker[0] = 0;
+		}
+
+		for (auto n : layer->nodes())
+		{
+			
+			if (n->statusMarker[0] == 0)
+			{
+				auto size = FindConnectedSizeAndMark(n, n);
+				components.push_back({ n, size });
+				if (size> largetsSize)
+				{
+					largetsSize = size;
+					largestStart = n;
+				}
+				out << "  found connected with size " << size << "\n";
+			}
+		}
+		
+		for (auto n:layer->nodes())
+		{
+			if (n->filterNode != largestStart)
+				n->deleted = true;
+		}
+
+		for (auto e : layer->edges())
+		{
+			if (e->node1()->filterNode != largestStart)
+				e->deleted = true;
+		}
+
+		layer->RemoveDeadElements();
+
+
+	}
+
+	int FindConnectedSizeAndMark(NodePtr sourceNode, Node* marker)
+	{	
+		vector<NodePtr > nextList;
+		vector<NodePtr > currList;
+		nextList.clear();
+		currList.clear();		
+		int graphDistance = 0;
+		currList.push_back(sourceNode);
+		enum  NodeStatusType:unsigned {Unset, Visited };
+
+		sourceNode->statusMarker[0] = NodeStatusType::Visited;
+
+		int count = 0;
+		while (!currList.empty())
+		{
+			for (auto node : currList)
+			{
+				count++;
+				node->filterNode = marker;
+
+				auto &edges = node->edges();
+				auto es = edges.size();
+				for (int i = es - 1; i >= 0; i--)
+				{
+					auto edge = edges[i];
+					auto nextNode = edge->otherNode(node);
+					if (nextNode->statusMarker[0] ==  NodeStatusType::Visited)
+						continue;
+					
+					nextNode->statusMarker[0] = NodeStatusType::Visited;
+					nextList.push_back(nextNode);
+				}
+			}
+			currList.swap(nextList);
+			nextList.clear();
+			graphDistance++;
+		}
+
+		return count;
+	}
 
 	void Init()
 	{
@@ -213,12 +313,15 @@ private:
 
 	void CreateLayers()
 	{	
+		auto layer = m_layers.back();
+		
 		cout << "Creating layers" << endl;
 
 		m_layers.resize(1);
 		while (m_layers.back()->nodes().size() > 1)
 		{
-			auto layer = new Layer(m_layers.back(),0);
+			layer = new Layer(m_layers.back(), 0, Layer::EdgeRemoval);
+			
 			if (layer->nodes().size() == m_layers.back()->nodes().size())
 				break;
 			m_layers.push_back(layer);			
@@ -234,7 +337,7 @@ private:
 			);
 			double dev = sqrt(devSum / layer->nodes().size());
 
-			cout << "Create layer with " << layer->nodes().size() << " nodes(). Avg node weight is "<< avg << " and stdDev is " << dev<< endl;
+			cout << "Create layer with " << layer->nodes().size() << " nodes and " << layer->edges().size()<< "edges. Avg node weight is "<< avg << " and stdDev is " << dev<< endl;
 		}		
 		cout << "Created " << m_layers.size() << " layers." << endl;
 	}			
@@ -281,7 +384,21 @@ private:
 				node->lowerLevel()[0]->Pos() = node->Pos()*scaleFactor;
 				node->lowerLevel()[0]->speed = 0;
 			}
-			else if (node->lowerLevel().size() == 2)
+			else
+			{
+				auto angle = rand();
+				for (auto n: node->lowerLevel())
+				{
+					Point offset;
+					angle += 2 * 3.14 / node->lowerLevel().size();
+					offset.X() = sin(angle)*separationDistance;
+					offset.Y() = cos(angle)*separationDistance;
+					n->speed = offset;					
+					n->Pos() = node->Pos()*scaleFactor + n->speed;					
+				}
+
+			} 
+			/*if (node->lowerLevel().size() == 2)
 			{
 				auto n1 = node->lowerLevel()[0];
 				auto n2 = node->lowerLevel()[1];				
@@ -293,7 +410,7 @@ private:
 				n2->speed = offset*(-1);
 				n1->Pos() = node->Pos()*scaleFactor + n1->speed;
 				n2->Pos() = node->Pos()*scaleFactor + n2->speed;
-			}
+			}*/
 		}
 
 		auto initialLayerExtent = layer->CalcExtent();

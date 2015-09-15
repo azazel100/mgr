@@ -22,34 +22,34 @@ public:
 		repositionScalingFactor = 1.0*thisDiam / upperDiam;
 	}
 	
-	void InitLayerPositions()override
-	{
-		int levelFromTop = topLayer->level - layer->level;
-		int i = 0;
-		if (levelFromTop == 0)
-		{
-			layer->nodes()[0]->Pos() = 0;
-		}
-		else if (levelFromTop == 1)
-		{
-			layer->nodes()[0]->Pos() = Point(0, 0);
-			layer->nodes()[1]->Pos() = Point(1, 0);
-		}
-		else
-		{
-			double factor = repositionScalingFactor;;
+	//void InitLayerPositions()override
+	//{
+	//	int levelFromTop = topLayer->level - layer->level;
+	//	int i = 0;
+	//	if (levelFromTop == 0)
+	//	{
+	//		layer->nodes()[0]->Pos() = 0;
+	//	}
+	//	else if (levelFromTop == 1)
+	//	{
+	//		layer->nodes()[0]->Pos() = Point(0, 0);
+	//		layer->nodes()[1]->Pos() = Point(1, 0);
+	//	}
+	//	else
+	//	{
+	//		double factor = repositionScalingFactor;;
 
-			for (auto node : layer->nodes())
-			{				
-				node->Pos() = node->upperLevel()[0]->Pos();
-				node->Pos() *= factor;
-				node->Pos().X() += rand() % 100 * 0.001;
-				node->Pos().Y() += rand() % 100 * 0.001;				
-				if (isnan(node->Pos().Lentgh()))
-					return;
-			}
-		}
-	}
+	//		for (auto node : layer->nodes())
+	//		{				
+	//			node->Pos() = node->upperLevel()[0]->Pos();
+	//			node->Pos() *= factor;
+	//			node->Pos().X() += rand() % 100 * 0.001;
+	//			node->Pos().Y() += rand() % 100 * 0.001;				
+	//			if (isnan(node->Pos().Lentgh()))
+	//				return;
+	//		}
+	//	}
+	//}
 	
 	double CalculateScaling()
 	{
@@ -95,7 +95,7 @@ private:
 		else
 		{
 			InitLayer(l->lower());
-			l->CalcAproxNodeProperties();
+//			l->CalcAproxNodeProperties();
 		}
 	}
 

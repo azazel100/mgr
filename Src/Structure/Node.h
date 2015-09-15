@@ -85,7 +85,7 @@ class Node //:public BaseObject<Node, (int)0xFAFAFAFA1>
 	
 	std::vector<NodePtr > _lowerLevel;
 	NodePtr _upperLevel[10];
-	Edge* _lowerLevelEdge=NULL;
+	
 	//NodeElement* _oryginalNode = NULL;
 
 	std::vector<Edge*> _edges;
@@ -99,6 +99,10 @@ public:
 	int index(){ return _index; }
 	int level = 0;
 	double averageDistance=0;//average graph distance in lower subgraph
+	double averageDistanceInclSelf()
+	{
+		return averageDistance*(_weight - 1) / _weight;
+	}
 	double graphDiameter=0;
     double lastAproxDistance[10];
 	//double lastExactDistance;
@@ -129,7 +133,7 @@ public:
 	const Rect& Bound() { return _bound; }	
 	int& weight() { return _weight; }
 	const vector<NodePtr >& lowerLevel()const{ return _lowerLevel; }
-	Edge* lowerEdge(){ return _lowerLevelEdge; }
+	
 
 	void Move(const Point& newPos)
 	{
@@ -199,8 +203,7 @@ public:
 		magic = 123456;
 		_lowerLevel.clear();
 		_edges.clear();
-		_neighbours.clear();
-		_lowerLevelEdge = nullptr;
+		_neighbours.clear();		
 		level = 0;
 		for (int i = 0; i < 10; i++){
 			statusMarker[i] = 0;

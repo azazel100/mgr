@@ -216,7 +216,7 @@ void TestSpringTopDown()
 	auto layer = Layer::CreateQuad(1,true);
 	auto topLayer = layer;
 	while (topLayer->nodes().size() > 1)
-		topLayer = new Layer(topLayer, 0);
+		topLayer = new Layer(topLayer, 0, Layer::EdgeRemoval);
 
 	auto m = new SpringTopDown();
 	m->topLayer = topLayer;	

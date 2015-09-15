@@ -14,11 +14,12 @@ public:
 
 	virtual void InitExecution()
 	{
+		K = 4;
 	}
 
 	void InitLayer()
 	{
-	
+		
 
 
 		//K /= layer->nodes().size() *1.0 / layer->upper()->nodes().size();
@@ -34,10 +35,10 @@ public:
 			n->force = 0;
 		}
 
-		for (auto n : layer->upper()[0]->nodes())
+		/*for (auto n : layer->upper()[0]->nodes())
 		{
 			UnmergeNode(n);
-		}
+		}*/
 
 		
 
@@ -47,34 +48,34 @@ public:
 		//		n->Pos() *= layer->upper()->nodes().size() / layer->nodes().size() ;
 	}
 
-	void InitLayerPositions()override
-	{
-		double scaleFactor;
-		bool scalePos = false;
+	//void InitLayerPositions()override
+	//{
+	//	double scaleFactor;
+	//	bool scalePos = false;
 
-		if (topLayer->level - layer->level == 1)
-		{
-			K = 1;
-			scaleFactor = 1;
-		}
-		else
-			scaleFactor = sqrt(7.0 / 4.0);
+	//	if (topLayer->level - layer->level == 1)
+	//	{
+	//		K = 1;
+	//		scaleFactor = 1;
+	//	}
+	//	else
+	//		scaleFactor = sqrt(7.0 / 4.0);
 
-		if (scalePos)
-		{
-			for (auto node : layer->nodes())
-			{
-				node->force = 0;
-				node->Pos() = node->upperLevel()[0]->Pos();
-				node->Pos() *= scaleFactor;
-				
-				node->Pos().X() += rand() % 100 * 0.001;
-				node->Pos().Y() += rand() % 100 * 0.001;
-			}
-		}
-		else
-			K = K / scaleFactor;
-	}
+	//	if (scalePos)
+	//	{
+	//		for (auto node : layer->nodes())
+	//		{
+	//			node->force = 0;
+	//			node->Pos() = node->upperLevel()[0]->Pos();
+	//			node->Pos() *= scaleFactor;
+	//			
+	//			node->Pos().X() += rand() % 100 * 0.001;
+	//			node->Pos().Y() += rand() % 100 * 0.001;
+	//		}
+	//	}
+	//	else
+	//		K = K / scaleFactor;
+	//}
 
 	void InitIteration(int number)override
 	{
@@ -83,7 +84,9 @@ public:
 
 	double CalculateScaling()
 	{
-		return 1;
+		K /= layer->nodes().size() *1.0 / layer->upper()[0]->nodes().size();
+		//K = K / sqrt(7.0 / 4.0);
+		return 1.0;;
 	}
 
 	void UnmergeNode(NodePtr node)

@@ -382,7 +382,7 @@ public:
 
 	static inline double RateEdge(Edge* edge)
 	{
-		return min(edge->node1()->weight(), edge->node2()->weight()) + max(edge->node1()->weight(), edge->node2()->weight())- edge->weight();
+		return min(edge->node1()->weight(), edge->node2()->weight()) + max(edge->node1()->weight(), edge->node2()->weight());// -edge->weight();
 		return -edge->weight();
 		//return -1 / RateEdgeLocality(edge);// -edge->weight();
 		return -min(edge->node1()->weight(), edge->node2()->weight());
@@ -396,6 +396,41 @@ public:
 
 	static std::minstd_rand0 rand_engine;
 	
+
+	class RatingComparer
+	{
+	public :
+		bool operator()(Edge* e1, Edge* e2)
+		{
+			return e1->CoarseningRating < e2->CoarseningRating;
+		}
+	};
+
+
+	class EdgesOfSameRating
+	{
+	public:
+		~EdgesOfSameRating()
+		{
+			//cout << "(-" << rating << ")";
+		}
+		EdgesOfSameRating(double rating)
+		{
+			this->rating = rating;	
+			//cout << "(+" << rating << ")";
+		}
+		void operator=(const EdgesOfSameRating&) = delete;
+		void operator=(EdgesOfSameRating&&) = delete;
+
+		bool operator<(const EdgesOfSameRating& other)
+		{
+			return rating < other.rating;
+		}
+
+		double rating;
+		unordered_set<Edge*> edges;
+	};
+
 	void CollapseEdges(int upperNumber)
 	{
 		
@@ -425,11 +460,11 @@ public:
 			auto firstAlreadyIncluded = _edges.begin();
 			shuffle(firstAlreadyIncluded, _edges.end(), rand_engine);
 		}
-		CalcAproxNodeProperties();
+		//CalcAproxNodeProperties();
 		/*for (auto n : nodes())
 			n->CalcNeighbours();
 		*/
-		if (true)
+		if (false)
 		{			
 			if (m_isDebugRun)
 				stable_sort(_edges.begin(), _edges.end(), [](Edge* e1, Edge* e2)
@@ -451,50 +486,140 @@ public:
 				if (edge->node1()->lowerLevel().size() > 1
 					|| edge->node2()->lowerLevel().size() > 1)
 					continue;
-
 				
-
 				CollapseEdge(edge, upperNumber);
-
-
-
-
 			}
 
 		}
-		else
+		else if (false)
 		{
 
 			int toCollapse = (int)edges().size() / 2;
+			if (edges().size() == 1)
+				toCollapse = 1;
 			// collapse eges
 
+			map<double,EdgesOfSameRating> edgesToCollapse;
+			auto add = [&](Edge* e)
+			{
+				auto it = edgesToCollapse.lower_bound(e->CoarseningRating);
+				if (it == edgesToCollapse.end() || it->first!= e->CoarseningRating)
+				{
+					it = edgesToCollapse.emplace(e->CoarseningRating, e->CoarseningRating).first;
+				}
+				
+				it->second.edges.insert(e);
+			};
+			auto remove = [&](Edge* e)
+			{
+				auto it = edgesToCollapse.find(e->CoarseningRating);
+				it->second.edges.erase(e);				
+			};
+
 			for (auto edge : edges())
+			{
 				edge->CoarseningRating = RateEdge(edge);
-
-			sort(_edges.begin(), _edges.end(), [](Edge* e1, Edge* e2)
+				add(edge);
+			}			
+			
+			while (toCollapse >0)
 			{
-				return e1->CoarseningRating < e2->CoarseningRating;
-			});
+				auto groupIt = edgesToCollapse.begin();
+				if (groupIt->second.edges.empty())
+				{
+					edgesToCollapse.erase(groupIt);
+					continue;
+				}
+				auto collapsingIt = groupIt->second.edges.begin();
+				
+				auto collapsing = *collapsingIt;
+				groupIt->second.edges.erase(collapsingIt);				
+				if (groupIt->second.edges.empty())
+					edgesToCollapse.erase(groupIt);
+				
 
+				if (EdgeIsCollapsed(collapsing))
+					continue;
 
-			while (toCollapse>0)
+				//cout << collapsing->CoarseningRating;
+				auto node = collapsing->node1();
+
+				int removedCount = CollapseEdge(collapsing, upperNumber);
+				toCollapse-=removedCount;
+
+				for (auto e : node->edges())
+				{					
+					auto newRating = RateEdge(e);
+					if (e->CoarseningRating != newRating)
+					{
+						remove(e);
+						e->CoarseningRating = RateEdge(e);
+						add(e);
+					}
+				}
+				
+			}		
+		}
+		else
+		{
+			int toCollapse = (int)edges().size() / 2;
+			if (edges().size() == 1)
+				toCollapse = 1;			
+
+			vector<Edge*>::iterator firstDeleted = _edges.end();
+			while (toCollapse > 0)
 			{
-				auto edge = edges().front();
-				CollapseEdge(edge, upperNumber);
-				toCollapse--;
-			}						
+				for (auto edge : edges())
+				{
+					edge->processed = false;
+					if (edge->deleted)
+						edge->CoarseningRating = numeric_limits<double>::max();
+					else
+						edge->CoarseningRating = RateEdge(edge);
+				}				
+				concurrency::parallel_sort(_edges.begin(), firstDeleted, [](Edge* e1, Edge* e2)
+				{					
+					return  e1->CoarseningRating < e2->CoarseningRating;
+				});
+
+				for (auto it = _edges.begin(); it != firstDeleted; it++)
+				{
+					if ((*it)->deleted)
+					{
+						firstDeleted = it;
+						break;
+					}
+				}
+
+				for (auto it = _edges.begin(); it != firstDeleted; it++)
+				{
+					auto edge = *it;
+					
+					if (edge->deleted || edge->processed)
+						continue;					
+					
+					auto node = edge->node1();
+					int removedCount = CollapseEdge(edge, upperNumber);
+					toCollapse -= removedCount;
+
+					for (auto e : node->edges())
+					{
+						e->processed = true;
+					}
+				}
+			}
 		}
 
-	
-
+		
 	}
 
-	void CollapseEdge(Edge* edge,int upperNumber)
+	int CollapseEdge(Edge* edge,int upperNumber)
 	{
+		
 		auto node1 = edge->node1();
 		auto node2 = edge->node2();
 		auto node = node1;
-					assert(edge->lowerLevel().size() == 1);
+					/*assert(edge->lowerLevel().size() == 1);*/
 		edge->Remove(upperNumber);
 
 		auto node1edges = node1->edges();
@@ -508,7 +633,9 @@ public:
 		node2->level = -1;
 		node2->magic = 0;
 		node2->deleted = true;
+		node2->weight() = 0;
 
+		int removedCount = 1;
 		// find edges() to merge
 		for (auto edge1 : node1edges)
 		{
@@ -518,10 +645,12 @@ public:
 				auto otherNode2 = edge2->otherNode(node);
 				if (otherNode1 == otherNode2)
 				{
+					removedCount++;
 					edge1->Merge(edge2, upperNumber);
 				}
 			}
 		}
+		return removedCount;
 	}
 
 	void RemoveDeadElements()
@@ -551,10 +680,13 @@ public:
 
 		_nodes.erase(nodesToErase, nodes().end());
 		_nodes.shrink_to_fit();
+
+		sort(_nodes.begin(), _nodes.end(), [](Node* n1, Node*n2){return n1->index() < n2->index(); });
 	}
 
+	enum Simplification{EdgeRemoval,HairRemoval};
 
-	Layer(Layer* lowerLayer, int upperNumber)
+	Layer(Layer* lowerLayer, int upperNumber, Simplification simplification)
 	{
 		m_isDebugRun = lowerLayer->m_isDebugRun;
 		level = lowerLayer->level + 1;
@@ -575,25 +707,7 @@ public:
 		{			
 			_nodes.push_back(pool<Node>::New(n, (int)nodes().size(), upperNumber));
 		}
-		if (false)
-		{
-			_edges.resize(lowerLayer->edges().size());
-			concurrency::parallel_for(0, (int)edges().size(), [&](int i)
-			{
-				_edges[i] = pool<Edge>::New(lowerLayer->edges()[i], (int)edges().size(), upperNumber, true);
-			}, concurrency::static_partitioner());
-
-			concurrency::parallel_for((size_t)0, nodes().size(), [&](int i)
-			{
-				auto node = nodes()[i];
-				auto lowerNode = lowerLayer->nodes()[i];
-				for (int j = 0; j < lowerNode->edges().size(); j++)
-				{
-					node->AddEdge(lowerNode->edges()[j]->upperLevel()[upperNumber]);
-				}
-			}, concurrency::static_partitioner());
-		}
-		else
+		
 		{
 			_edges.reserve(lowerLayer->edges().size());
 			for (auto e : lowerLayer->edges())
@@ -601,16 +715,17 @@ public:
 		}
 
 		CheckDups();
-		CollapseEdges(upperNumber);
-		RemoveDeadElements();
-		concurrency::parallel_for_each(nodes().begin(), nodes().end(), [](Node*n)
-		{
-			n->CalcNeighbours();
-		});		
+
+		if (simplification == EdgeRemoval)
+			Simplify(upperNumber);
+		else
+			RemoveHair(upperNumber);
+	
 			
 		
 		CheckDups();
 	}
+	
 
 	Rect CalcExtent()
 	{
@@ -646,7 +761,42 @@ public:
 		return sumLen / edges().size();
 	}
 
-	void CalcAproxNodeProperties();
+	private:
+		void Simplify(int upperNumber)
+		{
+			CollapseEdges(upperNumber);
+			
+
+			RemoveDeadElements();
+			concurrency::parallel_for_each(nodes().begin(), nodes().end(), [](Node*n)
+			{
+				n->CalcNeighbours();
+			});
+		}
+
+		void RemoveHair(int upperNumber)
+		{
+			// collaplse all hair like edges
+			vector<Edge*> hairsToCollapse;
+			for (auto n : nodes())
+			{
+				if (n->edges().size() == 1 && !EdgeIsCollapsed(n->edges()[0]))
+				{
+					hairsToCollapse.push_back(n->edges()[0]);
+				}
+			}
+			for (auto e : hairsToCollapse)
+			{
+				CollapseEdge(e, upperNumber);
+			}
+
+
+			RemoveDeadElements();
+			concurrency::parallel_for_each(nodes().begin(), nodes().end(), [](Node*n)
+			{
+				n->CalcNeighbours();
+			});
+		}
 	
 /*
 	void WriteToOryginal(GraphAttributes& ga){

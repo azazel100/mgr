@@ -167,11 +167,14 @@ ForceLayout::Load(const wstring filename, const wstring positions)
 		i2 = filename.size();
 	name = filename.substr(i1, i2 - i1);
 
-	m_layers.push_back(new Layer(filename, isDebugRun));
+	auto layer = new Layer(filename, isDebugRun);
+	m_layers.push_back(layer);
 	if (!positions.empty())
 	{
 		m_layers[0]->ReadPositions(positions);
 	}
+
+	cout << "Laded graph with " << layer->nodes().size() << " nodes and " << layer->edges().size() <<" edges" << endl;
 
 }
 

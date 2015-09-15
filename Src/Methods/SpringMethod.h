@@ -115,61 +115,61 @@ public:
 		return 1;
 	}
 
-	void InitLayerPositions()override
-	{
-		int levelFromTop = topLayer->level - layer->level;
-		int i = 0;
+	//void InitLayerPositions()override
+	//{
+	//	int levelFromTop = topLayer->level - layer->level;
+	//	int i = 0;
 
-		/*if (m_isFirstInit)
-		{
-			auto diam = CalcDiameterFast();
-			double angle = 0;
-			for (int i = 0; i < layer->nodes().size(); i++)
-			{
-				auto node = layer->nodes()[i];
-				node ->Pos().X() = sin(angle)* diam / 2;
-				node->Pos().Y() = cos(angle)* diam / 2;
-				node->speed = node->Pos();
-				angle += 2.0*3.14 / layer->nodes().size();				
-			}
-			topLayer->nodes()[0]->CalculatePosFromLoverLevels(topLayer->level - layer->level);
-			m_isFirstInit = false;
-			return;
-		}*/
+	//	/*if (m_isFirstInit)
+	//	{
+	//		auto diam = CalcDiameterFast();
+	//		double angle = 0;
+	//		for (int i = 0; i < layer->nodes().size(); i++)
+	//		{
+	//			auto node = layer->nodes()[i];
+	//			node ->Pos().X() = sin(angle)* diam / 2;
+	//			node->Pos().Y() = cos(angle)* diam / 2;
+	//			node->speed = node->Pos();
+	//			angle += 2.0*3.14 / layer->nodes().size();				
+	//		}
+	//		topLayer->nodes()[0]->CalculatePosFromLoverLevels(topLayer->level - layer->level);
+	//		m_isFirstInit = false;
+	//		return;
+	//	}*/
 
-		if (levelFromTop == 0)
-		{
-			layer->nodes()[0]->Pos() = 0;
-		}
-		else if (levelFromTop == 1)
-		{
-			layer->nodes()[0]->Pos() = Point(0, 0);
-			layer->nodes()[1]->Pos() = Point(1, 0);
-		}		
-		else
-		{			
-			double factor = repositionScalingFactor;;
+	//	if (levelFromTop == 0)
+	//	{
+	//		layer->nodes()[0]->Pos() = 0;
+	//	}
+	//	else if (levelFromTop == 1)
+	//	{
+	//		layer->nodes()[0]->Pos() = Point(0, 0);
+	//		layer->nodes()[1]->Pos() = Point(1, 0);
+	//	}		
+	//	else
+	//	{			
+	//		double factor = repositionScalingFactor;;
 
-			auto avglen = layer->upper()[0]->CalcAverageEdgeLength();
-			for (auto node : layer->nodes())
-			{
-				node->force = 0;
-				node->Pos() = node->upperLevel()[0]->Pos();
-				node->Pos() *= factor;				
-				node->speed.X() = rand() % 100 * (avglen / 100000);
-				node->speed.Y() = rand() % 100 * (avglen / 100000);
-				node->Pos() += node->speed;
+	//		auto avglen = layer->upper()[0]->CalcAverageEdgeLength();
+	//		for (auto node : layer->nodes())
+	//		{
+	//			node->force = 0;
+	//			node->Pos() = node->upperLevel()[0]->Pos();
+	//			node->Pos() *= factor;				
+	//			node->speed.X() = rand() % 100 * (avglen / 100000);
+	//			node->speed.Y() = rand() % 100 * (avglen / 100000);
+	//			node->Pos() += node->speed;
 
-				fordimm<Point::dimmensions - 2>::loop([&](unsigned d)
-				{					
-					;// node->Pos().val[d + 2] += rand() % 100 * (avglen / 1000);
-				});
+	//			fordimm<Point::dimmensions - 2>::loop([&](unsigned d)
+	//			{					
+	//				;// node->Pos().val[d + 2] += rand() % 100 * (avglen / 1000);
+	//			});
 
-				if (isnan(node->Pos().Lentgh()))
-					return;
-			}
-		}
-	}
+	//			if (isnan(node->Pos().Lentgh()))
+	//				return;
+	//		}
+	//	}
+	//}
 
 	void RebuildUpperLayer(int number)
 	{
@@ -181,10 +181,10 @@ public:
 			l = nl;
 		}
 
-		auto upperLayer = new Layer(layer, number);		
+		auto upperLayer = new Layer(layer, number,Layer::EdgeRemoval);		
 		while (upperLayer->nodes().size() > 1)
 		{
-			upperLayer = new Layer(upperLayer, 0);		
+			upperLayer = new Layer(upperLayer, 0, Layer::EdgeRemoval);
 		}
 		PrepareLayer(upperLayer, false);
 		alternativeTopLayers[number] = upperLayer;
@@ -257,8 +257,8 @@ public:
 				alternativeTopLayers[1] = nullptr;
 			}
 
-			for (auto e : layer->edges())
-				e->upperLevel().resize(2);
+			//for (auto e : layer->edges())
+			//	e->upperLevel().resize(2);
 			layer->upper().resize(2);
 			
 			
@@ -464,8 +464,8 @@ protected:
 		});
 		alternativeLayers.clear();
 
-		for (auto e : layer->edges())
-			e->upperLevel().resize(aproxForceAlternativeUpperLevelsCount + 1);
+		//for (auto e : layer->edges())
+		//	e->upperLevel().resize(aproxForceAlternativeUpperLevelsCount + 1);
 		layer->upper().resize(aproxForceAlternativeUpperLevelsCount + 1);
 		if (true)
 		{
@@ -476,13 +476,13 @@ protected:
 			for (int i = 0; i < aproxForceAlternativeUpperLevelsCount; i++)
 			{
 				
-				auto upperLayer = new Layer(layer, i + 1);
+				auto upperLayer = new Layer(layer, i + 1, Layer::EdgeRemoval);
 				lock.lock();
 				alternativeLayers.push_back(upperLayer);
 				lock.unlock();
 				while (upperLayer->nodes().size() > 1)
 				{
-					upperLayer = new Layer(upperLayer, 0);
+					upperLayer = new Layer(upperLayer, 0, Layer::EdgeRemoval);
 					lock.lock();
 					alternativeLayers.push_back(upperLayer);
 					lock.unlock();
@@ -505,11 +505,11 @@ protected:
 		{
 			for (int i = 0; i < aproxForceAlternativeUpperLevelsCount; i++)
 			{
-				auto upperLayer = new Layer(layer, i + 1);
+				auto upperLayer = new Layer(layer, i + 1, Layer::EdgeRemoval);
 				alternativeLayers.push_back(upperLayer);
 				while (upperLayer->nodes().size() > 1)
 				{
-					upperLayer = new Layer(upperLayer, 0);
+					upperLayer = new Layer(upperLayer, 0, Layer::EdgeRemoval);
 					alternativeLayers.push_back(upperLayer);
 				}
 				PrepareLayer(upperLayer, false);
@@ -537,7 +537,7 @@ protected:
 
 				if (useAproxForceEdgeTransitions)
 				{
-					BuildEdgeTransitionsBase(layer);
+					//BuildEdgeTransitionsBase(layer);
 				}
 				
 			}
@@ -546,10 +546,10 @@ protected:
 		{
 			PrepareLayer(layer->lower(),buildBase);
 			//if (useAproxNodeProperties)
-				layer->CalcAproxNodeProperties();			
+				CalcAproxNodeProperties(layer);			
 			if (useAproxForceEdgeTransitions)
 			{
-				BuildEdgeTransitionsFromLower(layer);
+				//BuildEdgeTransitionsFromLower(layer);
 			}
 
 			for (auto e : layer->edges())
@@ -563,7 +563,135 @@ protected:
 
 	unsigned  currentRoundMarker[20];
 	
-	
+	void CalcSumDistanceFromCluster(NodePtr sourceNode, NodePtr filterNode,int threadId, double &sum,double& count)
+	{		
+		assert(threadId > 0);
+		assert(threadId < 10);
+		vector<NodePtr > nextList;
+		vector<NodePtr > currList;
+		nextList.clear();
+		currList.clear();
+		StartNextRound(threadId);
+		int graphDistance = 0;
+		currList.push_back(sourceNode);
+		SetNodeStatus(sourceNode, NodeStatusType::Visited, threadId);		
+
+		while (!currList.empty())
+		{
+			for (auto node : currList)
+			{
+				if (node != sourceNode)
+				{
+					auto clusterDistance = sourceNode->averageDistanceInclSelf() + graphDistance + node->averageDistanceInclSelf();
+					auto clustersPairsCombinations = 0.5 *sourceNode->weight()*node->weight();
+
+					sum += clusterDistance * clustersPairsCombinations;						
+					count += clustersPairsCombinations;
+				}
+
+				auto &edges = node->edges();
+				auto es = edges.size();
+				for (int i = es - 1; i >= 0; i--)
+				{
+					auto edge = edges[i];
+					auto nextNode = node->neightbours()[i];// edge->otherNode(current);
+					if (GetNodeStatus(nextNode, threadId) == NodeStatusType::Visited)
+						continue;
+					if (filterNode != NULL && nextNode->filterNode != filterNode)
+						continue;
+					SetNodeStatus(nextNode, NodeStatusType::Visited, threadId);
+					nextList.push_back(nextNode);
+				}
+			}
+			currList.swap(nextList);
+			nextList.clear();
+			graphDistance++;
+		}
+		
+	}
+
+
+
+	void CalcAproxNodeProperties(Layer* layer)
+	{
+		for (auto n : layer->lower()->nodes())
+			n->filterNode = nullptr;
+		//concurrency::parallel_for_each(layer->nodes().begin(), layer->nodes().end(), [&](Node*node)
+		for(auto node : layer->nodes())
+		{
+			int threadId = concurrency::Context::VirtualProcessorId();
+			if (threadId == -1)
+				threadId = 9;
+			assert(threadId > 0);
+			assert(threadId < 10);
+
+
+		
+
+
+			//assert(node->lowerLevel().size() <= 2);
+			auto lower1 = node->lowerLevel()[0];
+			if (node->lowerLevel().size() == 1)
+			{
+				node->graphDiameter = lower1->graphDiameter;
+				node->averageDistance = lower1->averageDistance;
+				node->weight() = lower1->weight();
+			}
+			else
+			{
+
+
+			/*	auto lower2 = node->lowerLevel()[1];
+				node->weight() = lower1->weight() + lower2->weight();
+				node->graphDiameter = lower1->graphDiameter + 1 + lower2->graphDiameter;
+				auto lower1combinations = 0.5*(lower1->weight()*(lower1->weight() - 1));
+				auto lower2combinations = 0.5*(lower2->weight()*(lower2->weight() - 1));
+				auto lower12combinatinos = lower1->weight()*lower2->weight();
+				auto lower12distance = lower1->averageDistance*(lower1->weight() - 1) / lower1->weight()
+					+ 1
+					+ lower2->averageDistance*(lower2->weight() - 1) / (lower2->weight());
+				auto averageDistance =
+					(lower1combinations * lower1->averageDistance
+					+ lower2combinations * lower2->averageDistance
+					+ lower12combinatinos *lower12distance					
+					) / (lower1combinations + lower2combinations + lower12combinatinos);
+				node->averageDistance = averageDistance;*/
+
+
+
+				// any number of lower
+				double intraClustersSum = 0;
+				double interClustersSum = 0;
+				double interPairs = 0;
+				double intraPairs = 0;
+				int weight = 0;
+				for (auto subNode : node->lowerLevel())
+				{
+					subNode->filterNode = node;
+				}
+				for (auto subNode : node->lowerLevel())
+				{
+					weight += subNode->weight();
+					CalcSumDistanceFromCluster(subNode, node, threadId, interClustersSum, intraPairs);
+					
+					auto pairs = 0.5*subNode->weight()*(subNode->weight() - 1);
+					intraClustersSum += subNode->averageDistance * pairs;
+					interPairs += pairs;
+				}
+				auto averageDistance = (intraClustersSum + interClustersSum) / (interPairs + intraPairs);
+				
+				
+				node->averageDistance = averageDistance;
+				node->weight() = weight;
+				/*for (auto subNode : node->lowerLevel())
+				{
+					subNode->filterNode = nullptr;
+				}*/
+				//assert(abs(node->averageDistance - averageDistance)<0.00001);
+				//assert(node->weight() == weight);
+			}
+		};
+	}
 
 	void CalcExactNodeProperties(NodePtr node, int level)
 	{
@@ -738,105 +866,105 @@ protected:
 
 	
 
-	static void BuildEdgeTransitionsBase(Layer* layer)
-	{
+	//static void BuildEdgeTransitionsBase(Layer* layer)
+	//{
 
-		/*concurrency::parallel_*/for_each(layer->edges().begin(), layer->edges().end(), [](Edge* edge)
-		{
-			edge->clearEdgeTransitions();
-			for (auto node1Edge : edge->node1()->edges())
-			{
-				if (node1Edge != edge)
-					edge->setTransitionLength(node1Edge, 0);
-			}
+	//	/*concurrency::parallel_*/for_each(layer->edges().begin(), layer->edges().end(), [](Edge* edge)
+	//	{
+	//		edge->clearEdgeTransitions();
+	//		for (auto node1Edge : edge->node1()->edges())
+	//		{
+	//			if (node1Edge != edge)
+	//				edge->setTransitionLength(node1Edge, 0);
+	//		}
 
-			for (auto node2Edge : edge->node2()->edges())
-			{
-				if (node2Edge != edge)
-					edge->setTransitionLength(node2Edge,0);
-			}
-			edge->sortEdgeTransitions();
-		});
-	}
-
-	//-------------------------------------------------------------------------------------------------------------------------------------
-	static void BuildEdgeTransitionsFromLower(Layer* layer)
-	{
-		
-		/*concurrency::parallel_*/for_each(layer->edges().begin(), layer->edges().end(), [](Edge* edge)
-		{
-			edge->clearEdgeTransitions();
-			for (auto node1Edge : edge->node1()->edges())
-			{
-				if (node1Edge != edge)
-					edge->setTransitionLength(node1Edge, GetTransitionLength(edge, node1Edge));
-			}
-
-			for (auto node2Edge : edge->node2()->edges())
-			{
-				if (node2Edge != edge)
-					edge->setTransitionLength(node2Edge, GetTransitionLength(edge, node2Edge));
-			}
-			edge->sortEdgeTransitions();
-		});
-	}
-
+	//		for (auto node2Edge : edge->node2()->edges())
+	//		{
+	//			if (node2Edge != edge)
+	//				edge->setTransitionLength(node2Edge,0);
+	//		}
+	//		edge->sortEdgeTransitions();
+	//	});
+	//}
 
 	//-------------------------------------------------------------------------------------------------------------------------------------
-	static double GetTransitionLength(Edge* sourceEdge, Edge* targetEdge)
-	{
-		double sumOutgoing = 0;
+	//static void BuildEdgeTransitionsFromLower(Layer* layer)
+	//{
+	//	
+	//	/*concurrency::parallel_*/for_each(layer->edges().begin(), layer->edges().end(), [](Edge* edge)
+	//	{
+	//		edge->clearEdgeTransitions();
+	//		for (auto node1Edge : edge->node1()->edges())
+	//		{
+	//			if (node1Edge != edge)
+	//				edge->setTransitionLength(node1Edge, GetTransitionLength(edge, node1Edge));
+	//		}
 
-		NodePtr commonNode = NULL;
-		if (sourceEdge->node1() == targetEdge->node1() || sourceEdge->node1() == targetEdge->node2())
-			commonNode = sourceEdge->node1();
+	//		for (auto node2Edge : edge->node2()->edges())
+	//		{
+	//			if (node2Edge != edge)
+	//				edge->setTransitionLength(node2Edge, GetTransitionLength(edge, node2Edge));
+	//		}
+	//		edge->sortEdgeTransitions();
+	//	});
+	//}
 
-		else
-		{
-			commonNode = sourceEdge->node2();
-//			assert(sourceEdge->node2() == targetEdge->node1() || sourceEdge->node2() == targetEdge->node2());
-		}
-
-		Edge* connectiongLowerEdge = commonNode->lowerEdge();
-		double connectiongLowerEdgeTransition = 0;
-
-		double minOutgoing = 1000000;
-		for (auto lowerSourceEdge : sourceEdge->lowerLevel())
-		{
-			Edge* mintargetedge;
-			auto targetMin = GetTransitionLength(lowerSourceEdge, connectiongLowerEdge, targetEdge, mintargetedge);
-			if (targetMin < minOutgoing)
-				minOutgoing = targetMin;
-			sumOutgoing += targetMin;
-		}
-		return  sumOutgoing / sourceEdge->lowerLevel().size();
-	}
 
 	//-------------------------------------------------------------------------------------------------------------------------------------
-	static double GetTransitionLength(Edge* lowerSourceEdge, Edge* connectiongLowerEdge, Edge* targetEdge, Edge*& chosenLowerTargetEdge)
-	{
-		double targetMin = 100000;
-		for (auto lowerTargetEdge : targetEdge->lowerLevel())
-		{
-			double transitionLength = lowerSourceEdge->edgeTransitionLength(lowerTargetEdge);
-			if (transitionLength == -1)
-			{
+//	static double GetTransitionLength(Edge* sourceEdge, Edge* targetEdge)
+//	{
+//		double sumOutgoing = 0;
+//
+//		NodePtr commonNode = NULL;
+//		if (sourceEdge->node1() == targetEdge->node1() || sourceEdge->node1() == targetEdge->node2())
+//			commonNode = sourceEdge->node1();
+//
+//		else
+//		{
+//			commonNode = sourceEdge->node2();
+////			assert(sourceEdge->node2() == targetEdge->node1() || sourceEdge->node2() == targetEdge->node2());
+//		}
+//
+//		Edge* connectiongLowerEdge = commonNode->lowerEdge();
+//		double connectiongLowerEdgeTransition = 0;
+//
+//		double minOutgoing = 1000000;
+//		for (auto lowerSourceEdge : sourceEdge->lowerLevel())
+//		{
+//			Edge* mintargetedge;
+//			auto targetMin = GetTransitionLength(lowerSourceEdge, connectiongLowerEdge, targetEdge, mintargetedge);
+//			if (targetMin < minOutgoing)
+//				minOutgoing = targetMin;
+//			sumOutgoing += targetMin;
+//		}
+//		return  sumOutgoing / sourceEdge->lowerLevel().size();
+//	}
 
-				// no direct transition, go throug connecting lower edge
-				transitionLength = 0;
-				transitionLength += lowerSourceEdge->edgeTransitionLength(connectiongLowerEdge);
-				transitionLength += 1;
-				transitionLength += connectiongLowerEdge->edgeTransitionLength(lowerTargetEdge);
+	//-------------------------------------------------------------------------------------------------------------------------------------
+	//static double GetTransitionLength(Edge* lowerSourceEdge, Edge* connectiongLowerEdge, Edge* targetEdge, Edge*& chosenLowerTargetEdge)
+	//{
+	//	double targetMin = 100000;
+	//	for (auto lowerTargetEdge : targetEdge->lowerLevel())
+	//	{
+	//		double transitionLength = lowerSourceEdge->edgeTransitionLength(lowerTargetEdge);
+	//		if (transitionLength == -1)
+	//		{
 
-			}
-			if (transitionLength < targetMin){
-				targetMin = transitionLength;
-				chosenLowerTargetEdge = lowerTargetEdge;
-			}
+	//			// no direct transition, go throug connecting lower edge
+	//			transitionLength = 0;
+	//			transitionLength += lowerSourceEdge->edgeTransitionLength(connectiongLowerEdge);
+	//			transitionLength += 1;
+	//			transitionLength += connectiongLowerEdge->edgeTransitionLength(lowerTargetEdge);
 
-		}
-		return targetMin;
-	}
+	//		}
+	//		if (transitionLength < targetMin){
+	//			targetMin = transitionLength;
+	//			chosenLowerTargetEdge = lowerTargetEdge;
+	//		}
+
+	//	}
+	//	return targetMin;
+	//}
 
 	//double NodeMinLastExactDistance(NodePtr node, int level)
 	//{

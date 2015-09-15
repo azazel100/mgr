@@ -56,7 +56,7 @@ void Layer::Draw(const Rect& nodeExtent, const Point& imageSize, const wchar_t* 
 	auto avg = sum / count;
 
 
-	auto lineWidth = imageSize.X() / sum * 5;
+	auto lineWidth = imageSize.X() / sum * 10;
 	image.SetPenWidth(lineWidth);
 
 	bool useVimage = true;
@@ -84,46 +84,63 @@ void Layer::Draw(const Rect& nodeExtent, const Point& imageSize, const wchar_t* 
 			vimg->DrawLine(p1, p2, lineWidth, oversample? MemoryImage::Maximum : MemoryImage::Additive);
 		}
 
-		for (int x = 0; x < imageSize.X(); x++)
-			for (int y = 0; y < imageSize.Y(); y++)
-			{
-			//auto v = log( vimg->Pixel(x, y)+1)/log(20);
-			auto v = 1.0 -1.0/(1.0+vimg->Pixel(x, y) ) ;
-			vimg->Pixel(x, y) = v;
-			}
-
-		/*double sum = 0;
-		double max = 0;
-		for (int x = 0; x < imageSize.X(); x++)
-			for (int y = 0; y < imageSize.Y(); y++)
-			{
-				auto v = vimg->Pixel(x, y);
-				sum += v;
-				max = std::max(sum, v);
-			}
-
-		int histogram[100];
-		for (int x = 0; x < imageSize.X(); x++)
-			for (int y = 0; y < imageSize.Y(); y++)
-			{
-				auto v = vimg->Pixel(x, y);
-				auto s = (int)(100 * v / max);
-				histogram[s]++;
-			}
-
-		double bands[10];
-		int bandSum = 0;
-		int bandNum = 0;
-		int pixelCount = imageSize.X() * imageSize.Y();
-		for (int i = 0; i < 100; i++)
+		if (true)
 		{
-			bandSum += histogram[i];
-			if (bandSum >= pixelCount / 10)
+
+			double sum = 0;
+			double max = 1;
+			for (int x = 0; x < imageSize.X(); x++)
+				for (int y = 0; y < imageSize.Y(); y++)
+				{
+					auto v = vimg->Pixel(x, y);
+					assert(v >= 0);
+					sum += v;
+					max = std::max(max, v);
+				}
+
+			const int bandCount = 100;
+			int histogram[bandCount];
+			for (int i = 0; i < bandCount; i++)
+				histogram[i] = 0;
+
+			int sampleCount = 0;
+			for (int x = 0; x < imageSize.X(); x++)
+				for (int y = 0; y < imageSize.Y(); y++)
+				{
+					auto v = vimg->Pixel(x, y);
+					auto s = (int)((bandCount - 1) * v / max);
+					assert(s >= 0);
+					assert(s < bandCount);
+					if (v > 0)
+					{
+						sampleCount++;
+						histogram[s]++;
+					}
+				}
+
+			double bands[bandCount];
+			int bandSum = 0;
+			for (int i = 0; i < bandCount; i++)
 			{
-				bandSum -= pixelCount / 10;
+				bands[i] = (double)bandSum / sampleCount;
+				bandSum += histogram[i];
 			}
-			bands[bandNum]
-		}*/
+
+
+			for (int x = 0; x < imageSize.X(); x++)
+				for (int y = 0; y < imageSize.Y(); y++)
+				{
+					auto& v = vimg->Pixel(x, y);
+					auto bandNum = ((bandCount - 1) * v / max);					
+					auto bandIndex = (int)floor(bandNum);
+					auto bandFrac = bandNum - bandIndex;
+					auto color1 = bands[bandIndex];
+					auto color2 = bandIndex < bandCount - 1 ? bands[bandIndex+1] : 1;
+					auto color = color1*(1 - bandFrac) + color2*bandFrac;					
+					
+					v = color;
+				}
+		}
 
 		image.DrawMemoryImage(*vimg);
 		delete vimg;
@@ -141,38 +158,4 @@ void Layer::Draw(const Rect& nodeExtent, const Point& imageSize, const wchar_t* 
 	image.Save(fileName);
 }
 
-void Layer::CalcAproxNodeProperties()
-{
-	concurrency::parallel_for_each(nodes().begin(), nodes().end(), [](NodePtr node)
-	{
-		assert(node->lowerLevel().size() <= 2);
-		auto lower1 = node->lowerLevel()[0];
-		if (node->lowerLevel().size() == 1)
-		{
-			node->graphDiameter = lower1->graphDiameter;
-			node->averageDistance = lower1->averageDistance;
-			node->weight() = lower1->weight();
-		}
-		else
-		{
-			auto lower2 = node->lowerLevel()[1];
-			node->weight() = lower1->weight() + lower2->weight();
-			node->graphDiameter = lower1->graphDiameter + 1 + lower2->graphDiameter;
-			auto lower1combinations = 0.5*(lower1->weight()*(lower1->weight() - 1));
-			auto lower2combinations = 0.5*(lower2->weight()*(lower2->weight() - 1));
-			auto lower12combinatinos = lower1->weight()*lower2->weight();
-			
-			auto averageDistance =
-				(lower1combinations * lower1->averageDistance
-				+ lower2combinations * lower2->averageDistance
-				+ lower12combinatinos
-				*(
-					lower1->averageDistance*(lower1->weight() - 1) / lower1->weight()
-					+ 1
-					+ lower2->averageDistance*(lower2->weight() - 1) / (lower2->weight())
-				)
-				) / (lower1combinations + lower2combinations + lower12combinatinos);
-			node->averageDistance = averageDistance;
-		}
-	});
-}
+

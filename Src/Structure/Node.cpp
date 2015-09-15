@@ -4,23 +4,23 @@
 
 //NodePtr BaseObject<Node, 0xFAFAFAFA1>::lastEmpty = 0;
 
-
-void Node::SetPosToLower(){
-		if (_lowerLevel.size() == 1)
-			_lowerLevel.front()->Move(Pos());
-		else if (_lowerLevel.size() == 2)
-		{
-			double C = 1;
-			double K = 3;
-			auto idealDistance =  pow(C* K*K*K * _lowerLevel[0]->weight() * _lowerLevel[1]->weight() / _lowerLevelEdge->weight(), 1.0 / 3);
-			Point offset;
-			auto angle = rand();
-			offset.X() = sin(angle)*idealDistance/2;
-			offset.Y() = cos(angle)*idealDistance / 2;
-			_lowerLevel[0]->Move(Pos() + offset);
-			_lowerLevel[1]->Move(Pos() - offset);
-		}
-	}
+//
+//void Node::SetPosToLower(){
+//		if (_lowerLevel.size() == 1)
+//			_lowerLevel.front()->Move(Pos());
+//		else if (_lowerLevel.size() == 2)
+//		{
+//			double C = 1;
+//			double K = 3;
+//			auto idealDistance =  pow(C* K*K*K * _lowerLevel[0]->weight() * _lowerLevel[1]->weight() / _lowerLevelEdge->weight(), 1.0 / 3);
+//			Point offset;
+//			auto angle = rand();
+//			offset.X() = sin(angle)*idealDistance/2;
+//			offset.Y() = cos(angle)*idealDistance / 2;
+//			_lowerLevel[0]->Move(Pos() + offset);
+//			_lowerLevel[1]->Move(Pos() - offset);
+//		}
+//	}
 
 void Node::CalcNeighbours()
 {
@@ -32,14 +32,15 @@ void Node::CalcNeighbours()
 
 
 void Node::MergeLowerLevel(NodePtr other, Edge* edge, int upperNumber){
-	assert(edge->lowerLevel().size() == 1);
-	assert(_lowerLevel.size() == 1);
-	assert(other->_lowerLevel.size() == 1);
-	_lowerLevelEdge = edge->lowerLevel().front();
+	//assert(edge->lowerLevel().size() == 1);
+	//assert(_lowerLevel.size() == 1);
+	//assert(other->_lowerLevel.size() == 1);
+	
 	_lowerLevel.insert(_lowerLevel.end(), other->_lowerLevel.begin(), other->_lowerLevel.end());
 	for (auto l : other->_lowerLevel)
 		l->_upperLevel[upperNumber] = this;
 	_weight += other->_weight;
+	
 }
 
 
