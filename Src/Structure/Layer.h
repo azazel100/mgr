@@ -122,22 +122,29 @@ public:
 		char line[200];
 		level = 0;
 		
-		int nodeCount1,nodeCount2,nodeCount;
-		int edgeCount;
+		int nodeCount1=0,nodeCount2=0,nodeCount=0;
+		int edgeCount=0;
 		_nodes.clear();
 		_edges.clear();
 
-		while (myReadFile.peek() == '%')
+		while (myReadFile.peek() == '%' || myReadFile.peek() == '#')
 			myReadFile.getline(line, 200);
 
-		myReadFile >> nodeCount1 >> nodeCount2 >> edgeCount;
-		nodeCount = max(nodeCount1, nodeCount2);
+		auto ext = filename.substr(filename.find_last_of(L".") + 1);
+		std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+		if (ext == L"mtx")
+		{
+			myReadFile >> nodeCount1 >> nodeCount2 >> edgeCount;
+			nodeCount = max(nodeCount1, nodeCount2);
+		}
 		
 		_edges.reserve(edgeCount);
 		_nodes.reserve(nodeCount);
 		int count = 0;
+		map<string, Node*> nodeMap;
+
 		while (!myReadFile.eof()) {
-			int index1, index2;			
+			string index1, index2;			
 			int weight1=1, weight2=1, edgeWeight=1;
 			myReadFile >> index1 >> index2;
 			if (myReadFile.fail())
@@ -154,19 +161,21 @@ public:
 			count++;
 			if (count % 10000 == 0)
 				cout << " Read " << count << " edges." << endl;
-			index1--;
-			index2--;
-			while (nodes().size() < index1+1)
-			{
-				_nodes.push_back(pool<Node>::New((int)nodes().size()));
-			}
-			while (nodes().size() < index2+1)
-			{
-				_nodes.push_back(pool<Node>::New((int)nodes().size()));
-			}
+			
 
-			auto node1 = nodes()[index1];
-			auto node2 = nodes()[index2];
+			auto& node1 = nodeMap[index1];
+			if (node1==nullptr)			
+			{
+				node1 = pool<Node>::New((int)nodes().size());
+				_nodes.push_back(node1);
+			}
+			auto& node2 = nodeMap[index2];
+			if (node2==nullptr)
+			{
+				node2 = pool<Node>::New((int)nodes().size());
+				_nodes.push_back(node2);
+			}
+			
 			node1->weight() = weight1;
 			node2->weight() = weight2;
 			bool exists = false;
@@ -627,11 +636,14 @@ public:
 
 	double CalcAverageEdgeLength()
 	{
-		double avgLen = accumulate(edges().begin(), edges().end()
-			, 0.0
-			, [&](double avg, Edge* edge){return avg + sqrt(edge->node1()->Pos().DistanceSqr(edge->node2()->Pos())); }
-		) / edges().size();
-		return avgLen;
+
+		double sumLen = 0;
+		for (auto edge : edges())
+		{
+			auto len = sqrt(edge->node1()->Pos().DistanceSqr(edge->node2()->Pos()));
+			sumLen += len;
+		}
+		return sumLen / edges().size();
 	}
 
 	void CalcAproxNodeProperties();

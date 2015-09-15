@@ -441,5 +441,5 @@ public:
 
 
 
-typedef PointDimm<3> Point;
+typedef PointDimm<2> Point;
 //typedef PointSimple Point;

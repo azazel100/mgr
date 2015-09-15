@@ -100,7 +100,7 @@ public:
 		layer = m_layers[m_layers.size() - 3];
 		InitLayerPositionRandom();
 		avgLen = layer->CalcAverageEdgeLength();
-		auto initialStep = avgLen;
+		auto initialStep = avgLen/2;
 		auto finalStep = avgLen / 100;
 		LayoutLayer(initialStep, finalStep, true, [&](double step)
 		{
@@ -242,7 +242,7 @@ private:
 	int progress = 0;
 	double CalcAdaptiveStep(double step, double prevEnergy,double newEnergy,int &progress)
 	{
-		if (newEnergy > prevEnergy)
+		if (newEnergy > prevEnergy*0.999)
 		{
 			progress = 0;
 			step = step*0.9;
@@ -410,12 +410,12 @@ private:
 		auto batchSize = 1000;
 		auto batchCount = (int)ceil(method->layer->nodes().size()*1.0 / batchSize);
 
-		auto size = m_lastExtent.size();
+		/*auto size = m_lastExtent.size();
 		auto xySize = max(size.X(), size.Y());
 		size.val[2] = xySize / 1000;
 		auto maxAdditionalSizes = m_lastExtent.center() + size;
 		auto minAdditionalSizes = m_lastExtent.center() - size;
-
+*/
 
 		concurrency::parallel_for(0, batchCount, [&](int batchNum){
 			int threadNum = concurrency::Context::VirtualProcessorId();

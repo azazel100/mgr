@@ -77,9 +77,9 @@ Image::Image(const Rect& graphExtent, const Point& imageSize, int edgeCount,  bo
 			m_graphics->SetSmoothingMode(Gdiplus::SmoothingMode::SmoothingModeHighQuality);		
 	}
 
-	/*Gdiplus::SolidBrush whiteBrush(Gdiplus::Color( 255,255,255));
+	Gdiplus::SolidBrush whiteBrush(Gdiplus::Color( 255,255,255));
 	m_graphics->FillRectangle(&whiteBrush, Gdiplus::Rect(0, 0, imageSize.X(), imageSize.Y()));
-	*/
+	
 }
 
 Point PointOnLine(const Point& point, const Point& line1, const Point line2)
