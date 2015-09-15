@@ -107,6 +107,7 @@ void Layer::Draw(const Rect& nodeExtent, const Point& imageSize, const wchar_t* 
 			for (int x = 0; x < imageSize.X(); x++)
 				for (int y = 0; y < imageSize.Y(); y++)
 				{
+
 					auto v = vimg->Pixel(x, y);
 					auto s = (int)((bandCount - 1) * v / max);
 					assert(s >= 0);
