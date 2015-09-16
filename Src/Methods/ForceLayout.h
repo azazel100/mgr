@@ -321,18 +321,19 @@ private:
 		m_layers.resize(1);
 		while (m_layers.back()->nodes().size() > 1)
 		{
-			layer = new Layer(m_layers.back(), 0, Layer::EdgeRemoval);
+			auto newlayer = new Layer(m_layers.back(), 0, Layer::EdgeRemoval);			
+			layer = newlayer;
 			
 			if (layer->nodes().size() == m_layers.back()->nodes().size())
 				break;
 			m_layers.push_back(layer);			
-			cout << "dd";
+			
 			double sum = accumulate(layer->nodes().begin(), layer->nodes().end()
 				,0
 				, [](int sum, NodePtr node){return sum + node->weight(); }
 			);
 			double avg = sum / layer->nodes().size();
-			int devSum = accumulate(m_layers.back()->nodes().begin(), m_layers.back()->nodes().end()
+			int devSum = accumulate(layer->nodes().begin(), layer->nodes().end()
 				, 0
 				, [&](int sum, NodePtr node){return  (node->weight() - avg)*(node->weight() - avg); }
 			);
@@ -340,7 +341,7 @@ private:
 
 			cout << "Create layer with " << layer->nodes().size() << " nodes and " << layer->edges().size()<< "edges. Avg node weight is "<< avg << " and stdDev is " << dev<< endl;
 		}		
-		cout << "Created " << m_layers.size() << " layers." << endl;
+		cout << "Created " << m_layers.size() << " layers." << endl;		
 	}			
 
 	int progress = 0;

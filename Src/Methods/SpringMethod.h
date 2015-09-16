@@ -571,10 +571,54 @@ protected:
 		vector<NodePtr > currList;
 		nextList.clear();
 		currList.clear();
-		StartNextRound(threadId);
-		int graphDistance = 0;
+		StartNextRound(threadId);		
 		currList.push_back(sourceNode);
-		SetNodeStatus(sourceNode, NodeStatusType::Visited, threadId);		
+		SetNodeStatus(sourceNode, NodeStatusType::Queued, threadId);
+		sourceNode->lastAproxDistance[threadId] = sourceNode->averageDistanceInclSelf();
+
+		priority_queue<QueuedNode, vector<QueuedNode>, QueuedNodeComparer> toVisit;
+		toVisit.push({ sourceNode, sourceNode->lastAproxDistance[threadId] });
+		while (!toVisit.empty())
+		{
+			auto node = toVisit.top().node;
+			toVisit.pop();
+			if (GetNodeStatus(node, threadId) == NodeStatusType::Visited)
+				continue;
+			SetNodeStatus(node, NodeStatusType::Visited, threadId);
+			if (node != sourceNode && node->filterNode == filterNode)
+			{
+				auto clusterDistance = node->lastAproxDistance[threadId];
+				auto clustersPairsCombinations = 0.5 *sourceNode->weight()*node->weight();
+
+				sum += clusterDistance * clustersPairsCombinations;
+				count += clustersPairsCombinations;
+			}
+
+			auto &edges = node->edges();
+			auto es = edges.size();
+			for (int i = es - 1; i >= 0; i--)
+			{
+				auto edge = edges[i];
+				auto nextNode = node->neightbours()[i];// edge->otherNode(current);
+				// allow to step one node outsize of filter
+				if (nextNode->filterNode != filterNode && node->filterNode != filterNode)
+					continue;
+				auto nextStatus = GetNodeStatus(nextNode, threadId);
+				if (nextStatus== NodeStatusType::Visited)
+					continue;
+				auto dist = node->lastAproxDistance[threadId] + 1 + nextNode->averageDistanceInclSelf();
+				if (nextStatus == NodeStatusType::Queued)
+				{
+					if (dist > nextNode->lastAproxDistance[threadId])
+						continue;
+				}				
+				nextNode->lastAproxDistance[threadId] = dist;
+				toVisit.push({ nextNode, dist });
+				SetNodeStatus(nextNode, NodeStatusType::Queued, threadId);				
+			}
+			
+		}
+		return;
 
 		while (!currList.empty())
 		{
@@ -582,7 +626,7 @@ protected:
 			{
 				if (node != sourceNode)
 				{
-					auto clusterDistance = sourceNode->averageDistanceInclSelf() + graphDistance + node->averageDistanceInclSelf();
+					auto clusterDistance = node->lastAproxDistance[threadId];
 					auto clustersPairsCombinations = 0.5 *sourceNode->weight()*node->weight();
 
 					sum += clusterDistance * clustersPairsCombinations;						
@@ -599,13 +643,13 @@ protected:
 						continue;
 					if (filterNode != NULL && nextNode->filterNode != filterNode)
 						continue;
+					nextNode->lastAproxDistance[threadId] = node->lastAproxDistance[threadId] + 1 + nextNode->averageDistanceInclSelf();
 					SetNodeStatus(nextNode, NodeStatusType::Visited, threadId);
 					nextList.push_back(nextNode);
 				}
 			}
 			currList.swap(nextList);
-			nextList.clear();
-			graphDistance++;
+			nextList.clear();			
 		}
 		
 	}

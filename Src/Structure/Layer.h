@@ -488,82 +488,17 @@ public:
 					continue;
 				
 				CollapseEdge(edge, upperNumber);
+
+
+
 			}
 
-		}
-		else if (false)
-		{
-
-			int toCollapse = (int)edges().size() / 2;
-			if (edges().size() == 1)
-				toCollapse = 1;
-			// collapse eges
-
-			map<double,EdgesOfSameRating> edgesToCollapse;
-			auto add = [&](Edge* e)
-			{
-				auto it = edgesToCollapse.lower_bound(e->CoarseningRating);
-				if (it == edgesToCollapse.end() || it->first!= e->CoarseningRating)
-				{
-					it = edgesToCollapse.emplace(e->CoarseningRating, e->CoarseningRating).first;
-				}
-				
-				it->second.edges.insert(e);
-			};
-			auto remove = [&](Edge* e)
-			{
-				auto it = edgesToCollapse.find(e->CoarseningRating);
-				it->second.edges.erase(e);				
-			};
-
-			for (auto edge : edges())
-			{
-				edge->CoarseningRating = RateEdge(edge);
-				add(edge);
-			}			
-			
-			while (toCollapse >0)
-			{
-				auto groupIt = edgesToCollapse.begin();
-				if (groupIt->second.edges.empty())
-				{
-					edgesToCollapse.erase(groupIt);
-					continue;
-				}
-				auto collapsingIt = groupIt->second.edges.begin();
-				
-				auto collapsing = *collapsingIt;
-				groupIt->second.edges.erase(collapsingIt);				
-				if (groupIt->second.edges.empty())
-					edgesToCollapse.erase(groupIt);
-				
-
-				if (EdgeIsCollapsed(collapsing))
-					continue;
-
-				//cout << collapsing->CoarseningRating;
-				auto node = collapsing->node1();
-
-				int removedCount = CollapseEdge(collapsing, upperNumber);
-				toCollapse-=removedCount;
-
-				for (auto e : node->edges())
-				{					
-					auto newRating = RateEdge(e);
-					if (e->CoarseningRating != newRating)
-					{
-						remove(e);
-						e->CoarseningRating = RateEdge(e);
-						add(e);
-					}
-				}
-				
-			}		
-		}
+		}		
 		else
 		{
-			int toCollapse = (int)edges().size() / 2;
-			if (edges().size() == 1)
+			int toCollapse = (int)edges().size() *0.3;
+
+			if (toCollapse==0)
 				toCollapse = 1;			
 
 			vector<Edge*>::iterator firstDeleted = _edges.end();
