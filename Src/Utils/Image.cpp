@@ -65,6 +65,7 @@ Image::Image(const Rect& graphExtent, const Point& imageSize, int edgeCount,  bo
 	m_lineWidth = imageSize.X() / sqrt(edgeCount) / 50;
 
 	m_bitmap = new Gdiplus::Bitmap((int)imageSize.X(), (int)imageSize.Y());
+	m_bitmap->SetResolution(600, 600);
 	m_graphics = new Gdiplus::Graphics (m_bitmap);
 	
 	m_pen = new Gdiplus::Pen(Gdiplus::Color(0, 0, 0), m_lineWidth);

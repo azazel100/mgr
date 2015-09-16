@@ -1406,7 +1406,7 @@ protected:
 				assert(nextNode->magic == 123456);
 				assert(!nextNode->deleted);
 				//	toVisit.insert(insertPoint, nextNode);
-				toVisit.push({ nextNode, nextDistance });
+				toVisit.push({ nextNode, nextDistance }); 
 
 			}
 			if (foreceLayout->isDebugRun){
