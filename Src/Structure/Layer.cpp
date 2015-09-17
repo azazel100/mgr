@@ -103,6 +103,8 @@ void Layer::Draw(const Rect& nodeExtent, const Point& imageSize, const wchar_t* 
 			for (int i = 0; i < bandCount; i++)
 				histogram[i] = 0;
 
+
+
 			int sampleCount = 0;
 			for (int x = 0; x < imageSize.X(); x++)
 				for (int y = 0; y < imageSize.Y(); y++)
@@ -110,8 +112,10 @@ void Layer::Draw(const Rect& nodeExtent, const Point& imageSize, const wchar_t* 
 
 					auto v = vimg->Pixel(x, y);
 					auto s = (int)((bandCount - 1) * v / max);
+
 					assert(s >= 0);
 					assert(s < bandCount);
+
 					if (v > 0)
 					{
 						sampleCount++;

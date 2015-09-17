@@ -142,6 +142,7 @@ public:
 				finalStep = initialStep / 100;
 			LayoutLayer(initialStep, finalStep, false, [&](double step){return step; });
 
+			
 			layer = layer->lower();
 		}
 
@@ -518,6 +519,7 @@ private:
 			out << " step: " << step;
 			out << " avforce " << newAvForce;*/
 			
+			
 			DrawIteration(initialExtent);
 			DrawMovieFrame(extentBefore, extentAfter);						
 
@@ -546,6 +548,7 @@ private:
 
 		totalTime.Tick();		
 		out << "Total time: " << totalTime.Seconds();
+		DrawLayer();
 
 	}
 
@@ -625,7 +628,15 @@ private:
 		
 	}
 
-
+	void DrawLayer()
+	{
+		auto extent = layer->CalcExtent();
+		totalTime.Stop();
+		wchar_t buff[200];
+		wsprintf(buff, L"%s\\%s\\Layer %d.png", outputDir.c_str(), outName.c_str(), layer->level, iteration);
+		layer->Draw(extent, { drawFinalSize, drawFinalSize }, buff, false);
+		totalTime.Start();
+	}
 
 
 
