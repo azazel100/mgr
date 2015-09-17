@@ -84,8 +84,9 @@ public:
 
 	double CalculateScaling()
 	{
-		K /= layer->nodes().size() *1.0 / layer->upper()[0]->nodes().size();
-		//K = K / sqrt(7.0 / 4.0);
+		//return sqrt(7.0 / 4.0);
+		//K /= layer->nodes().size() *1.0 / layer->upper()[0]->nodes().size()*0.7;
+		K = K / sqrt(7.0 / 4.0);
 		return 1.0;;
 	}
 

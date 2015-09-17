@@ -156,7 +156,7 @@ public:
 		}
 		avgLen = m_layers.front()->CalcAverageEdgeLength();
 		double avforce, energy;
-		CalcForces(energy, avforce, 0);
+		CalcForces(energy, avforce);
 		out << " final energy: " << energy / avgLen / avgLen << " average force is: " << avforce << "\n";
 
 
@@ -375,9 +375,9 @@ private:
 
 	void InitLayerPositionsFromUpper()
 	{
-		double scaleFactor = method->CalculateScaling();
+		double scaleFactor =  method->CalculateScaling();
 		avgLen = layer->upper()[0]->CalcAverageEdgeLength()*scaleFactor;
-		double separationDistance = avgLen / 100;
+		double separationDistance = avgLen / 10000;
 		for (auto node  : layer->upper()[0]->nodes())
 		{
 			if (node->lowerLevel().size() == 1)
@@ -422,6 +422,30 @@ private:
 		DrawIteration( initialLayerExtent );
 	}
 
+
+	double minimizeSA(double x, double s, function<double(double)> func)
+	{
+		double y, xp, yp;
+
+
+		x = x;
+		y = func(x);
+		double dir = 1;
+
+		for (int it = 0; it < 40; it++)
+		{
+
+			dir = y < yp ? dir : -dir;
+			xp = x;
+			yp = y;
+
+			s = s*0.98;
+			x = x + s*dir;
+			y = func(x);			
+		}
+		return x;
+	}
+
 	void LayoutLayer(double initialStep, double finalStep,bool adaptiveStep,function<double(double)> afterIter)
 	{
 		out << "Layout layer " << layer->level << "\n";
@@ -439,6 +463,33 @@ private:
 		method->layer = layer;
 		method->InitLayer();
 		initWatch.Stop();
+		
+
+		/*out << " find optimal scale..." << "\n";
+		method->InitIteration(iteration);
+		double scalePow = minimizeSA(0.9, 0.5, [&](double scalePow)
+		{
+			double scale = pow(2, scalePow);
+			concurrency::parallel_for_each(layer->nodes().begin(), layer->nodes().end(), [&](Node*n)
+			{
+				n->Pos() = n->Pos()*scale;
+			});
+			double energy, a;
+			method->InitIteration(iteration);
+			CalcForces(energy, a);
+			concurrency::parallel_for_each(layer->nodes().begin(), layer->nodes().end(), [&](Node*n)
+			{
+				n->Pos() = n->Pos()/scale;
+			});
+			out << "  scale: " << scale << " energy: " << energy << "\n";
+			return a;
+		});
+
+		double scale = pow(2, scalePow);
+		concurrency::parallel_for_each(layer->nodes().begin(), layer->nodes().end(), [&](Node*n)
+		{
+			n->Pos() = n->Pos()*scale;
+		});*/
 
 		out << " iterate..." << "\n";		
 		iterateWatch.Start();
@@ -446,18 +497,18 @@ private:
 		double prevEnergy = numeric_limits<double>::max();
 		iteration = 1;
 		auto initialExtent = layer->CalcExtent();
-		auto extentBefore = initialExtent;
-		
+		auto extentBefore = initialExtent;		
 		while (step > finalStep)
 		{
 			totalTime.Tick();			
 			out << " it: " << iteration << " time: " << totalTime.Seconds() << " layout..";
-			// calc and move
-			method->InitIteration(iteration);
+			// calc and move			
 			double newEnergy, newAvForce;
-			CalcForces(newEnergy, newAvForce, step);
+			method->InitIteration(iteration);
+			CalcForces(newEnergy, newAvForce);
+			MoveNodes(step);
 			
-			out << "ok";
+			out << " energy: " << newEnergy;
 
 			// log and draw
 			auto extentAfter = layer->CalcExtent();
@@ -499,23 +550,13 @@ private:
 	}
 
 
-	void CalcForces(double& energy, double& avForce, double maxStep)
+	void CalcForces(double& energy, double& avForce)
 	{
 		energy = 0;
 		avForce = 0;
 		vector<int> threadIds;
 		concurrency::critical_section cs;
 
-
-
-
-		concurrency::parallel_for_each(method->layer->nodes().begin(), method->layer->nodes().end(), [&](NodePtr node)	{
-			int threadNum = concurrency::Context::VirtualProcessorId();
-			if (threadNum == -1)
-				threadNum = 9;
-			assert(threadNum < 20);
-			node->force = method->CalcForce(node, threadNum);
-		});
 
 		double sumsForce[10];
 		double sumsEnergy[10];
@@ -525,15 +566,34 @@ private:
 			sumsEnergy[i] = 0;
 		}
 
+		concurrency::parallel_for_each(method->layer->nodes().begin(), method->layer->nodes().end(), [&](NodePtr node)	{
+			int threadNum = concurrency::Context::VirtualProcessorId();
+			if (threadNum == -1)
+				threadNum = 9;
+			assert(threadNum < 20);
+			node->force = method->CalcForce(node, threadNum);
+			sumsEnergy[threadNum] += node->force.LengthSqr();;
+			sumsForce[threadNum] += node->force.Lentgh();
+		});
+
+		double sumForce = 0;
+		double sumEnergy = 0;
+		for (int i = 0; i < 10; i++)
+		{
+			sumEnergy += sumsEnergy[i];
+			sumForce += sumsForce[i];
+		}
+
+		avForce = sumForce / method->layer->nodes().size();
+		energy = sumEnergy;
+	}
+
+	void MoveNodes(double maxStep)
+	{
 		auto batchSize = 1000;
 		auto batchCount = (int)ceil(method->layer->nodes().size()*1.0 / batchSize);
 
-		/*auto size = m_lastExtent.size();
-		auto xySize = max(size.X(), size.Y());
-		size.val[2] = xySize / 1000;
-		auto maxAdditionalSizes = m_lastExtent.center() + size;
-		auto minAdditionalSizes = m_lastExtent.center() - size;
-*/
+	
 
 		concurrency::parallel_for(0, batchCount, [&](int batchNum){
 			int threadNum = concurrency::Context::VirtualProcessorId();
@@ -558,22 +618,14 @@ private:
 				assert(!isnan(node->Pos().Lentgh()));
 				node->Pos()[2] -= maxStep / 10;
 				node->Pos()[2] = max(0.0, node->Pos()[2]);
-				sumsEnergy[threadNum] += node->force.LengthSqr();;
-				sumsForce[threadNum] += node->force.Lentgh();
+				
 			}
 		});
 
-		double sumForce = 0;
-		double sumEnergy = 0;
-		for (int i = 0; i < 10; i++)
-		{
-			sumEnergy += sumsEnergy[i];
-			sumForce += sumsForce[i];
-		}
-
-		avForce = sumForce / method->layer->nodes().size();
-		energy = sumEnergy;
+		
 	}
+
+
 
 
 

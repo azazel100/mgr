@@ -382,7 +382,7 @@ public:
 
 	static inline double RateEdge(Edge* edge)
 	{
-		return min(edge->node1()->weight(), edge->node2()->weight()) + max(edge->node1()->weight(), edge->node2()->weight());// -edge->weight();
+		return min(edge->node1()->weight(), edge->node2()->weight()) + max(edge->node1()->weight(), edge->node2()->weight()) -edge->weight();
 		return -edge->weight();
 		//return -1 / RateEdgeLocality(edge);// -edge->weight();
 		return -min(edge->node1()->weight(), edge->node2()->weight());
@@ -496,7 +496,7 @@ public:
 		}		
 		else
 		{
-			int toCollapse = (int)edges().size() *0.3;
+			int toCollapse = (int)edges().size() *0.4;
 
 			if (toCollapse==0)
 				toCollapse = 1;			
@@ -542,6 +542,9 @@ public:
 						e->processed = true;
 					}
 				}
+
+				if (toCollapse > 0)
+					cout << " too big recudint---------------------------------------" << endl;
 			}
 		}
 

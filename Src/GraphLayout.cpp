@@ -278,7 +278,113 @@ void ConcurencyTest()
 	}
 }
 
+struct p{
+	double x;
+	double y;
+
+	bool operator< (const p& o){ return x < o.x; }
+
+};
+
+void minimize(double x,double s, function<double(double)> func)
+{
+	vector<p> space;
+
+	space.emplace_back(p{ x - s, func(x - s) });
+	space.emplace_back(p{ x, func(x )});
+	space.emplace_back(p{ x + s, func(x + s) });
+	 
+
+	for (int it = 0; it < 20;it++)
+	{
+		int i = 1;
+		while (i < space.size() - 2)
+		{
+			if (space[i].x >= x)
+				break;
+			i++;
+		}
+
+
+		auto h1 = space[i].x - space[i - 1].x;
+		auto h2 = space[i + 1].x - space[i].x;
+		auto v1 = space[i].y - space[i - 1].y;
+		auto v2 = space[i + 1].y - space[i].y;
+
+		auto d = (v1 + v2) / (h1 + h2);
+		auto dd = (v2 / h2 - v1/ h1) / ((h1 + h2) / 2);
+		
+		if (dd == 0)
+			break;
+
+		x = x - d/dd;
+		double y = func(x);
+
+		;
+
+		bool found = false;
+		for (int i = 0; i < space.size(); i++)
+		{
+			if (space[i].x == x)
+			{
+				found = true;
+				break;
+			}
+		}
+		if (!found)
+		{
+			space.push_back(p { x, y });
+		}
+		
+		
+		sort(space.begin(), space.end());
+		cout << "x: " << x << " y: " << y << endl;
+	}
+
+
+}
+
+
+void minimize1(double x, double s, function<double(double)> func)
+{
+	double y, xp, yp;
+
+
+	x = x;
+	y = func(x);
+	double dir = 1;
+	
+	for (int it = 0; it < 20; it++)
+	{
+		
+		dir = y < yp ? dir : -dir;
+		xp = x;
+		yp = y;
+
+		s = s*0.9;
+		x = x + s*dir;
+		y = func(x);
+		cout << "x: " << x << " y: " << y << endl;
+
+	}
+
+}
+void minimizeTest()
+{
+
+	auto func = [](double x){
+		return x*x;
+	};
+
+	minimize(100, 20, func);
+
+	minimize1(100, 20, func);
+}
+
 void Test(){
+
+	minimizeTest();
+
 	Stopwatch watch;
 	TestMotionBlur(); return;
 	
