@@ -67,7 +67,7 @@ void Layer::Draw(const Rect& nodeExtent, const Point& imageSize, const wchar_t* 
 		MemoryImage* vimg;
 		vimg = new MemoryImage(imageSize.X(), imageSize.Y(), oversample? 4 : 1);
 
-		auto imageExtent = Rect(imageSize.X() / 10, imageSize - imageSize.X() / 10);
+		auto imageExtent = Rect(imageSize.X() / 100, imageSize - imageSize.X() / 100);
 
 		auto translatePoint = [&](const Point& point)
 		{
