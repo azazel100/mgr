@@ -112,7 +112,25 @@ public:
 
 	double CalculateScaling()
 	{		
-		return 1;
+
+		if (!useAproxForcePersistentNodeProperties)
+		{
+			//topLayer->nodes()[0]->graphDiameter = CalcDiameterFast();
+			auto thisDiam = CalcDiameterFast();;// topLayer->nodes()[0]->graphDiameter;
+			
+			repositionScalingFactor = 1.0*thisDiam / prevUpperDiam;
+			prevUpperDiam = thisDiam;
+			cout << "Diameter is " << thisDiam << endl;
+
+			return repositionScalingFactor;
+		}
+		else
+
+		{
+			return 1;
+		}
+
+		
 	}
 
 	//void InitLayerPositions()override
@@ -297,18 +315,7 @@ public:
 		}
 		
 		
-		if (!useAproxForcePersistentNodeProperties)
-		{
-			topLayer->nodes()[0]->graphDiameter = CalcDiameterFast();
-			auto thisDiam = topLayer->nodes()[0]->graphDiameter;
-			repositionScalingFactor = thisDiam / prevUpperDiam;
-			prevUpperDiam = thisDiam;
-		}
-		else
-
-		{
-			repositionScalingFactor = 1;
-		}
+		
 		
 		
 	}
@@ -601,7 +608,7 @@ protected:
 				auto edge = edges[i];
 				auto nextNode = node->neightbours()[i];// edge->otherNode(current);
 				// allow to step one node outsize of filter
-				if (nextNode->filterNode != filterNode && node->filterNode != filterNode)
+				if (nextNode->filterNode != filterNode )//&& node->filterNode != filterNode)
 					continue;
 				auto nextStatus = GetNodeStatus(nextNode, threadId);
 				if (nextStatus== NodeStatusType::Visited)
